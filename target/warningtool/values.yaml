@@ -30,7 +30,7 @@ fullnameOverride: ""
 # 定义service的类型和端口。
 service:
   type: NodePort
-  port: 8090
+  port: 8800
 
 
 resources:

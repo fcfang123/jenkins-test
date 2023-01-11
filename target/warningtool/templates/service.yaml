@@ -1,15 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "warningtool.fullname" . }}
-  labels:
-    {{- include "warningtool.labels" . | nindent 4 }}
+  name: {{ .Values.warningtool.fullname  }}
+
+# 通过spec.selector字段确定这个Service将要使用哪些Label。
+# 在本例，这个名warning-service的Service，将会管理所有具有标签app: warningtool的Pod。  
 spec:
   type: {{ .Values.service.type }}
+  selector:
+    app: warningtool
+    version: warningtool-1.0.0
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
+    - port: 8800
+      nodePort: {{ .Values.service.port }}
+      targetPort: 8800
       protocol: TCP
       name: http
-  selector:
-    {{- include "warningtool.selectorLabels" . | nindent 4 }}

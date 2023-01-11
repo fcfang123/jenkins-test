@@ -1,82 +1,67 @@
-# Default values for warningtool.
+# Default values for nginx.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+warningtool:
+# 定义应用的名字
+  fullname: warningtool-1-0-0
+  fullnameapp: nginx-app
+# 定义应用副本数量
+  replicaCount: 1
 
+  liveinitialDelaySeconds: 5
+  readinitialDelaySeconds: 5
+
+# 定义镜像的仓库地址 tag版本号
 image:
-  repository: nginx
+  repository: registry.xxx.baidu.com/dev/warningtool
+  tag:  v1.0
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
 
-imagePullSecrets: []
+hostPath:
+# 设置是否开启站点模式、如果为true则将宿主机的/data目录通过站点模式映射出来。
+  enabled: true
+  path: /data
+  type: ''
+
 nameOverride: ""
 fullnameOverride: ""
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-podAnnotations: {}
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
+# 定义service的类型和端口。
 service:
-  type: ClusterIP
-  port: 80
+  type: NodePort
+  port: 8090
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
-resources: {}
+resources:
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+#  limits:
+#    cpu: 2
+#    memory: 1Gi
+# 启动的最小要求，如不满足则无法启动。
+  requests:
+    cpu: 1
+    memory: 2Gi
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
+# 指定pod分配到指定node节点。
 nodeSelector: {}
-
+# 节点亲和性（容忍）是pod的一种属性，它使pod被吸引到一类特定的节点。
 tolerations: []
 
 affinity: {}
+# 存活探针，判断pod（中的应用容器）是否健康
+livenessProbe:
+  periodSeconds: 5
+  timeoutSeconds: 20
+  successThreshold: 1
+  failureThreshold: 3
+# 就绪探针，pod就绪我们可以理解为这个pod可以接手请求和访问
+readinessProbe:
+  periodSeconds: 5
+  timeoutSeconds: 20
+  successThreshold: 3
+  failureThreshold: 1
+

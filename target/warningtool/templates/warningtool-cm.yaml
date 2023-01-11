@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.warningtool.fullname  }}
+  namespace: {{ .Release.Namespace }}
+data:
+  application.properties: |
+    server.port= 8800
+    phones= xxxxxxxx,xxxxxxxx
+    logging.level.root=INFO
+    logging.file.name=./logs/warningtool.log
+    logging.logback.rollingpolicy.max-file-size=50MB

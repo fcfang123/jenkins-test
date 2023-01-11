@@ -1,61 +1,79 @@
-apiVersion: apps/v1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ include "warningtool.fullname" . }}
+  name: {{ .Values.warningtool.fullname  }}
+  namespace: {{ .Release.Namespace }}
+  # deployment的标签 标签的键值对 app:warningtool
   labels:
-    {{- include "warningtool.labels" . | nindent 4 }}
+    app: warningtool
+    version: warningtool-1.0.0
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: {{ .Values.warningtool.replicaCount }}
+  # 与service里的selector的标签对应上才可以对外提供服务
   selector:
+  # 和下面的labels一致，否则会直接报错：选择的和模板标签不匹配
     matchLabels:
-      {{- include "warningtool.selectorLabels" . | nindent 6 }}
+      app: warningtool
+      version: warningtool-1.0.0
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+    # 为即将新建的pod附加label
       labels:
-        {{- include "warningtool.selectorLabels" . | nindent 8 }}
+        app: warningtool
+        version: warningtool-1.0.0
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "warningtool.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        - name: {{ .Values.warningtool.fullname  }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8089
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
-              port: http
+              path: /healthcheck
+              port: 8800
+            initialDelaySeconds: {{ .Values.warningtool.liveinitialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
           readinessProbe:
             httpGet:
-              path: /
-              port: http
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
+              path: /healthcheck
+              port: 8800
+            initialDelaySeconds: {{ .Values.warningtool.readinitialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          # 映射到容器的位置
+          volumeMounts:
+      {{- if .Values.hostPath.enabled }}
+          - mountPath: /data
+            name: data
+      {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Values.warningtool.fullname  }}
+      {{- if .Values.hostPath.enabled }}
+      - name: data
+        hostPath:
+          path: {{ .Values.hostPath.path }}
+          type: {{ .Values.hostPath.type }}
+      - name: log
+        hostPath:
+          # 宿主机的目录
+          path: /data/logs
+          type: DirectoryOrCreate
+      {{- end }}
+{{- if .Values.nodeSelector }}
+      # 指定pod分配到指定node节点，属于强制性的。如果我们的目标节点没有可用的资源，我们的pod就会一直处于Pending状态
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}
+

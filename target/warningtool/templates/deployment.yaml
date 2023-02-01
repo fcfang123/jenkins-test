@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.warningtool.fullname  }}
+  namespace: {{ .Release.Namespace }}
+  # deployment的标签 标签的键值对 app:warningtool
+  labels:
+    app: warningtool
+    version: warningtool-1.0.0
+spec:
+  replicas: {{ .Values.warningtool.replicaCount }}
+  # 与service里的selector的标签对应上才可以对外提供服务
+  selector:
+  # 和下面的labels一致，否则会直接报错：选择的和模板标签不匹配
+    matchLabels:
+      app: warningtool
+      version: warningtool-1.0.0
+  template:
+    metadata:
+    # 为即将新建的pod附加label
+      labels:
+        app: warningtool
+        version: warningtool-1.0.0
+    spec:
+      containers:
+        - name: {{ .Values.warningtool.fullname  }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          ports:
+            - name: http
+              containerPort: 8800
+              protocol: TCP
+          # 映射到容器的位置
+          volumeMounts:
+      {{- if .Values.hostPath.enabled }}
+          - mountPath: /data
+            name: data
+      {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Values.warningtool.fullname  }}
+      {{- if .Values.hostPath.enabled }}
+      - name: data
+        hostPath:
+          path: {{ .Values.hostPath.path }}
+          type: {{ .Values.hostPath.type }}
+      - name: log
+        hostPath:
+          # 宿主机的目录
+          path: /data/logs
+          type: DirectoryOrCreate
+      {{- end }}
+{{- if .Values.nodeSelector }}
+      # 指定pod分配到指定node节点，属于强制性的。如果我们的目标节点没有可用的资源，我们的pod就会一直处于Pending状态
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}
+

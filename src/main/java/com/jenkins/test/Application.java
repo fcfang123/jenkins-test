@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class Application {
     @GetMapping("/")
     public String home() {
-        return "test1111q2asd112112·21111111111113";
+        return "test1111q2asd112112·211111111111113";
     }
 }

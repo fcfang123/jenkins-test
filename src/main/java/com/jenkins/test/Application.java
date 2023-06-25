@@ -5,8 +5,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class Application {
+    static class OOMObject {
+    }
+
     @GetMapping("/")
     public String home() {
-        return "test1111q211asd111211111112·1211111s1ss11111111113";
+        return "test1111q211asd111211111111112·1211111s1ss11111111113";
     }
 }
